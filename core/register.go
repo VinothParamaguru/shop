@@ -30,8 +30,34 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 	if error != nil {
 		panic(error)
 	}
-	status, code := security.Validate("email", register_params.Email)
-	fmt.Println(status)
-	fmt.Println(code)
-	utilities.HandleError(http_response_writer, status, code)
+
+	// Validate all the fields
+
+	// required field validation
+	status, code := security.ValidateRequiredFields([]string{register_params.Email,
+		register_params.Firstname, register_params.Lastname})
+	if !status {
+		utilities.HandleError(http_response_writer, status, code)
+		return
+	}
+
+	// input fields validation
+	status, code = security.ValidateInput("email", register_params.Email)
+	if !status {
+		utilities.HandleError(http_response_writer, status, code)
+		fmt.Println("email")
+		return
+	}
+	status, code = security.ValidateInput("name", register_params.Firstname)
+	if !status {
+		utilities.HandleError(http_response_writer, status, code)
+		fmt.Println("fname")
+		return
+	}
+	status, code = security.ValidateInput("name", register_params.Lastname)
+	if !status {
+		utilities.HandleError(http_response_writer, status, code)
+		fmt.Println("lname")
+		return
+	}
 }

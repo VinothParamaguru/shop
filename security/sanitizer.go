@@ -34,11 +34,21 @@ var validator_mappings = map[string]ValidatorParams{
 }
 
 // treat all the values as strings for now, for simplicity
-func Validate(name string, value string) (bool, int) {
+func ValidateInput(name string, value string) (bool, int) {
 	expression := validator_mappings[name].Expression
 	if expression == "" {
 		return validator_mappings[name].ValidatorAuto(value)
 	} else {
 		return validator_mappings[name].ValidatorManual(value, expression)
 	}
+}
+
+func ValidateRequiredFields(fields []string) (bool, int) {
+
+	for _, field := range fields {
+		if field == "" {
+			return false, app_error.FieldMissing
+		}
+	}
+	return true, app_error.Success
 }

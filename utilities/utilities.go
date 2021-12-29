@@ -29,9 +29,6 @@ func HandleError(http_response_writer http.ResponseWriter, status bool, code int
 	if !status && code != app_error.Success {
 		http_response_writer.Header().Set("Content-Type", "application/json")
 		http_response_writer.WriteHeader(http.StatusBadRequest)
-		//response_params := make(map[string]string)
-		//response_params["code"] = string(code)
-		//response_params["message"] = app_error.ErrorDescriptions[code]
 		response_params := app_error.ErrorResponse{Code: code, Description: app_error.ErrorDescriptions[code]}
 		json_response, error := json.Marshal(response_params)
 		if error != nil {

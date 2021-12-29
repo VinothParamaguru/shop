@@ -2,13 +2,16 @@ package error
 
 // Error codes - application specific
 const (
-	Success      = 0
-	InvalidInput = 100
+	Success = 0
+	// Starts from 100 just not to mingle with the http standard error codes
+	InvalidInput = 1000
+	FieldMissing = 1001
 )
 
 // Error code and descriptions map
 var ErrorDescriptions = map[int]string{
-	InvalidInput: "Input is invalid. Please check",
+	InvalidInput: "Input is invalid",
+	FieldMissing: "Input field missing",
 }
 
 // Error description structure for the client
