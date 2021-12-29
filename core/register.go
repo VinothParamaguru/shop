@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"workspace/shop/security"
+	"workspace/shop/utilities"
 )
 
 // define the struct for registration
@@ -16,6 +17,7 @@ type Register struct {
 	Email     string `json:"email"`
 }
 
+// Register the user
 func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.Request) {
 
 	fmt.Println("Registration... called")
@@ -28,7 +30,8 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 	if error != nil {
 		panic(error)
 	}
-	status := security.Validate("email", register_params.Email)
+	status, code := security.Validate("email", register_params.Email)
 	fmt.Println(status)
-
+	fmt.Println(code)
+	utilities.HandleError(http_response_writer, status, code)
 }
