@@ -11,6 +11,6 @@ func Start() {
 	http.HandleFunc("/Register", core.RegisterUser)
 	http.HandleFunc("/Login", core.Login)
 
-	http.ListenAndServe(":5000", nil)
+	http.ListenAndServe(":8000", nil)
 
 }

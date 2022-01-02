@@ -37,3 +37,5 @@ func HandleError(http_response_writer http.ResponseWriter, status bool, code int
 		http_response_writer.Write(json_response)
 	}
 }
+
+func GetDataBaseConfig()

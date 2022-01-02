@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"workspace/shop/database"
 	"workspace/shop/security"
 	"workspace/shop/utilities"
 )
@@ -60,4 +61,6 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 		fmt.Println("lname")
 		return
 	}
+
+	database.Open("core")
 }
