@@ -1,6 +1,6 @@
 package database
 
 type DataBaseConfig struct {
-	database string
-	password string
+	Database string `json:"database"`
+	Password string `json:"password"`
 }

@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"workspace/shop/database"
+
+	//app_db "workspace/shop/database"
 	"workspace/shop/security"
 	"workspace/shop/utilities"
 )
@@ -41,7 +42,9 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 		utilities.HandleError(http_response_writer, status, code)
 		return
 	}
+	database_config := utilities.GetDataBaseConfig()
 
+	fmt.Println(database_config.Database)
 	// input fields validation
 	status, code = security.ValidateInput("email", register_params.Email)
 	if !status {
@@ -62,5 +65,4 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 		return
 	}
 
-	database.Open("core")
 }

@@ -6,11 +6,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func InitStatement(sql_query string) {
+// connect to the database
+// returns the DB handle
+func Connect(schema string) *sql.DB {
 
 	database_handle, error_info := sql.Open("mysql", "root:sniffer@123@/core")
+
 	if error_info != nil {
-		panic(error_info.Error())
+		return nil
 	}
+
 	return database_handle
 }

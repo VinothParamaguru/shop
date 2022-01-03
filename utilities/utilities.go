@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
+	app_db "workspace/shop/database"
 	app_error "workspace/shop/error"
 )
 
@@ -38,4 +40,29 @@ func HandleError(http_response_writer http.ResponseWriter, status bool, code int
 	}
 }
 
-func GetDataBaseConfig()
+func GetDataBaseConfig() app_db.DataBaseConfig {
+
+	// read the database configuration file
+	// using relative path for now. This should be replaced by absolute path of the file
+	config_file_relative_path := "config/database_config.json"
+	config_file_absolute_path, error_info := filepath.Abs(config_file_relative_path)
+
+	if error_info != nil {
+		panic(error_info)
+	}
+
+	// read
+	data, error_info := ioutil.ReadFile(config_file_absolute_path)
+	if error_info != nil {
+		panic(error_info)
+	}
+
+	// unmarshal
+	var database_config app_db.DataBaseConfig
+	error_info = json.Unmarshal(data, &database_config)
+	if error_info != nil {
+		panic(error_info)
+	}
+
+	return database_config
+}

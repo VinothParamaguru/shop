@@ -30,7 +30,7 @@ func ValidateField(value string, expression string) (bool, int) {
 
 var validator_mappings = map[string]ValidatorParams{
 	"email": {ValidateEmail, nil, ""},
-	"name":  {nil, ValidateField, "^([a-zA-Z]{2,}\\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\\s?([a-zA-Z]{1,})?)"},
+	"name":  {nil, ValidateField, "^[A-Z][-'a-zA-Z]+$"},
 }
 
 // treat all the values as strings for now, for simplicity
