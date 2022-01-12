@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	//app_db "workspace/shop/database"
+	app_db "workspace/shop/database"
 	"workspace/shop/security"
 	"workspace/shop/utilities"
 )
@@ -20,7 +20,8 @@ type Register struct {
 }
 
 // Register the user
-func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.Request) {
+func RegisterUser(http_response_writer http.ResponseWriter,
+	http_request *http.Request) {
 
 	fmt.Println("Registration... called")
 	payload, error := ioutil.ReadAll(http_request.Body)
@@ -42,9 +43,7 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 		utilities.HandleError(http_response_writer, status, code)
 		return
 	}
-	database_config := utilities.GetDataBaseConfig()
 
-	fmt.Println(database_config.Database)
 	// input fields validation
 	status, code = security.ValidateInput("email", register_params.Email)
 	if !status {
@@ -65,4 +64,11 @@ func RegisterUser(http_response_writer http.ResponseWriter, http_request *http.R
 		return
 	}
 
+	database_config := utilities.GetDataBaseConfig()
+	fmt.Println(database_config.Schema)
+
+	db := app_db.DataBase{Connector: nil, Config: database_config}
+	db.Open()
+	db.Insert("users", []app_db.Field{{"username", "Vinoth"}})
+	fmt.Println(db.Config.Schema)
 }

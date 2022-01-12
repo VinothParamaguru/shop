@@ -1,6 +1,23 @@
 package database
 
+import (
+	"database/sql"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
 type DataBaseConfig struct {
-	Database string `json:"database"`
+	User     string `json:"user"`
 	Password string `json:"password"`
+	Schema   string `json:"schema"`
+}
+
+type DataBase struct {
+	Connector *sql.DB
+	Config    DataBaseConfig
+}
+
+type Field struct {
+	Name  string
+	Value interface{}
 }

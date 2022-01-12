@@ -1,5 +1,6 @@
 {
-    "database" : "core",
-    "password" : "sniffer@123"
+    "user" : "root",
+    "password": "sniffer@123",
+    "schema" : "core"
 }
 

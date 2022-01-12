@@ -8,13 +8,13 @@ import (
 
 // connect to the database
 // returns the DB handle
-func Connect(schema string) *sql.DB {
+func (db *DataBase) Open() {
 
-	database_handle, error_info := sql.Open("mysql", "root:sniffer@123@/core")
-
+	// open the connection to db
+	data_source := db.Config.User + ":" + db.Config.Password + "@/" + db.Config.Schema
+	database_connection, error_info := sql.Open("mysql", data_source)
 	if error_info != nil {
-		return nil
+		panic(error_info)
 	}
-
-	return database_handle
+	db.Connector = database_connection
 }
