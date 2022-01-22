@@ -14,9 +14,11 @@ import (
 // define the struct for registration
 
 type Register struct {
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	Email     string `json:"email"`
+	Firstname   string `json:"firstname"`
+	Lastname    string `json:"lastname"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	DateOfBirth string `json:"date_of_birth"`
 }
 
 // Register the user
@@ -34,11 +36,9 @@ func RegisterUser(http_response_writer http.ResponseWriter,
 		panic(error)
 	}
 
-	// Validate all the fields
-
 	// required field validation
 	status, code := security.ValidateRequiredFields([]string{register_params.Email,
-		register_params.Firstname, register_params.Lastname})
+		register_params.Password})
 	if !status {
 		utilities.HandleError(http_response_writer, status, code)
 		return
@@ -48,27 +48,46 @@ func RegisterUser(http_response_writer http.ResponseWriter,
 	status, code = security.ValidateInput("email", register_params.Email)
 	if !status {
 		utilities.HandleError(http_response_writer, status, code)
-		fmt.Println("email")
-		return
-	}
-	status, code = security.ValidateInput("name", register_params.Firstname)
-	if !status {
-		utilities.HandleError(http_response_writer, status, code)
-		fmt.Println("fname")
-		return
-	}
-	status, code = security.ValidateInput("name", register_params.Lastname)
-	if !status {
-		utilities.HandleError(http_response_writer, status, code)
-		fmt.Println("lname")
 		return
 	}
 
+	status, code = security.ValidateInput("password", register_params.Password)
+	if !status {
+		utilities.HandleError(http_response_writer, status, code)
+		return
+	}
+
+	if register_params.Firstname != "" {
+		status, code = security.ValidateInput("name", register_params.Firstname)
+		if !status {
+			utilities.HandleError(http_response_writer, status, code)
+			return
+		}
+	}
+
+	if register_params.Lastname != "" {
+		status, code = security.ValidateInput("name", register_params.Lastname)
+		if !status {
+			utilities.HandleError(http_response_writer, status, code)
+			return
+		}
+	}
+
+	// get database configuration
 	database_config := utilities.GetDataBaseConfig()
 	fmt.Println(database_config.Schema)
-
 	db := app_db.DataBase{Connector: nil, Config: database_config}
-	db.Open()
-	db.Insert("users", []app_db.Field{{"username", "Vinoth"}})
+
+	// open the database
+	if status, code = db.Open(); !status {
+		utilities.HandleError(http_response_writer, status, code)
+	}
+
+	// perform insert
+	fields := []app_db.Field{
+		{Name: "username", Value: "Vinoth1"},
+	}
+
+	db.Insert("users", fields)
 	fmt.Println(db.Config.Schema)
 }
