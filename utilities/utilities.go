@@ -1,8 +1,11 @@
 package utilities
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"path/filepath"
 	app_db "workspace/shop/database"
@@ -65,4 +68,39 @@ func GetDataBaseConfig() app_db.DataBaseConfig {
 	}
 
 	return database_config
+}
+
+// generate the hash using the provided input string
+// this function uses sha256 algorithm to generate hashes
+
+func GenerateHash(input string) string {
+
+	sha256_hash := sha256.New()
+
+	if _, error_info := sha256_hash.Write([]byte(input)); error_info != nil {
+		panic(error_info)
+	}
+
+	byte_slice := sha256_hash.Sum(nil)
+
+	return fmt.Sprintf("%x", byte_slice)
+
+}
+
+func GetRandomNumber(minimum int, maximum int) int {
+	// copied from Go cook book
+	return rand.Intn(maximum-minimum) + minimum
+}
+
+func GetRandomString(length int) string {
+
+	bytes := make([]byte, length)
+	for i := 0; i < length; i++ {
+		// Get character equivalent of random numbers
+		// in the range 33 - 126 ascii
+		// this makes a good mix of letters, alphabets
+		// and special characters
+		bytes[i] = byte(GetRandomNumber(33, 126))
+	}
+	return string(bytes)
 }

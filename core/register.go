@@ -78,6 +78,14 @@ func RegisterUser(http_response_writer http.ResponseWriter,
 	fmt.Println(database_config.Schema)
 	db := app_db.DataBase{Connector: nil, Config: database_config}
 
+	password_seed := utilities.GetRandomString(len(register_params.Password))
+
+	fmt.Println(password_seed)
+
+	temporary_hash := utilities.GenerateHash(register_params.Password + password_seed)
+
+	final_hash := utilities.GenerateHash(temporary_hash)
+
 	// open the database
 	if status, code = db.Open(); !status {
 		utilities.HandleError(http_response_writer, status, code)
@@ -86,6 +94,8 @@ func RegisterUser(http_response_writer http.ResponseWriter,
 	// perform insert
 	fields := []app_db.Field{
 		{Name: "username", Value: "Vinoth1"},
+		{Name: "password", Value: final_hash},
+		{Name: "password_seed", Value: password_seed},
 	}
 
 	db.Insert("users", fields)
