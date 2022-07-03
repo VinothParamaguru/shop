@@ -11,6 +11,9 @@ func Start() {
 	http.HandleFunc("/Register", core.RegisterUser)
 	http.HandleFunc("/Login", core.Login)
 
-	http.ListenAndServe(":8000", nil)
+	err := http.ListenAndServe(":8000", nil)
 
+	if err != nil {
+		panic(err)
+	}
 }

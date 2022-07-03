@@ -84,7 +84,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 
 	temporaryHash := utilities.GenerateHash(registerParams.Password + passwordSeed)
 
-	finalHash := utilities.GenerateHash(temporaryHash)
+	hashedPassword := utilities.GenerateHash(temporaryHash)
 
 	// open the database
 	if status, code = db.Open(); !status {
@@ -93,9 +93,16 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 
 	// perform insert
 	fields := []app_db.Field{
-		{Name: "username", Value: "Vinoth1"},
-		{Name: "password", Value: finalHash},
+		{Name: "email", Value: registerParams.Email},
+		{Name: "password", Value: hashedPassword},
 		{Name: "password_seed", Value: passwordSeed},
+	}
+
+	if registerParams.Firstname != "" {
+		fields = append(fields, app_db.Field{Name: "firstname", Value: registerParams.Firstname})
+	}
+	if registerParams.Lastname != "" {
+		fields = append(fields, app_db.Field{Name: "lastname", Value: registerParams.Lastname})
 	}
 
 	db.Insert("users", fields)
