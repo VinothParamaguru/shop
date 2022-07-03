@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// as per golang documentation,
+// SetRandomSeed as per golang documentation,
 // it is enough to call this function once
 // in the process to set the random seed
 func SetRandomSeed() {

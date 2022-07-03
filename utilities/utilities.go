@@ -12,34 +12,34 @@ import (
 	app_error "workspace/shop/error"
 )
 
-// extract the http payload as string
-func ExtractPayloadAsString(http_request *http.Request) string {
+// ExtractPayloadAsString extract the http payload as string
+func ExtractPayloadAsString(httpRequest *http.Request) string {
 
-	payload, error := ioutil.ReadAll(http_request.Body)
-	if error != nil {
-		panic(error)
+	payload, err := ioutil.ReadAll(httpRequest.Body)
+	if err != nil {
+		panic(err)
 	}
 	// restore the content of body if needed
 	return string(payload)
 }
 
-// Uses the response writer object to write the message to the client
-func WriteMessage(http_response_writer *http.ResponseWriter, message string) {
+// WriteMessage Uses the response writer object to write the message to the client
+func WriteMessage() {
 
 }
 
-// Handle the error using the api return status and error code returned
-func HandleError(http_response_writer http.ResponseWriter, status bool, code int) {
+// HandleError Handle the error using the api return status and error code returned
+func HandleError(httpResponseWriter http.ResponseWriter, status bool, code int) {
 
 	if !status && code != app_error.Success {
-		http_response_writer.Header().Set("Content-Type", "application/json")
-		http_response_writer.WriteHeader(http.StatusBadRequest)
-		response_params := app_error.ErrorResponse{Code: code, Description: app_error.ErrorDescriptions[code]}
-		json_response, error := json.Marshal(response_params)
-		if error != nil {
-			panic(error)
+		httpResponseWriter.Header().Set("Content-Type", "application/json")
+		httpResponseWriter.WriteHeader(http.StatusBadRequest)
+		responseParams := app_error.ErrorResponse{Code: code, Description: app_error.ErrorDescriptions[code]}
+		jsonResponse, err := json.Marshal(responseParams)
+		if err != nil {
+			panic(err)
 		}
-		http_response_writer.Write(json_response)
+		httpResponseWriter.Write(jsonResponse)
 	}
 }
 
@@ -47,27 +47,27 @@ func GetDataBaseConfig() app_db.DataBaseConfig {
 
 	// read the database configuration file
 	// using relative path for now. This should be replaced by absolute path of the file
-	config_file_relative_path := "config/database_config.json"
-	config_file_absolute_path, error_info := filepath.Abs(config_file_relative_path)
+	configFileRelativePath := "config/database_config.json"
+	configFileAbsolutePath, errorInfo := filepath.Abs(configFileRelativePath)
 
-	if error_info != nil {
-		panic(error_info)
+	if errorInfo != nil {
+		panic(errorInfo)
 	}
 
 	// read
-	data, error_info := ioutil.ReadFile(config_file_absolute_path)
-	if error_info != nil {
-		panic(error_info)
+	data, errorInfo := ioutil.ReadFile(configFileAbsolutePath)
+	if errorInfo != nil {
+		panic(errorInfo)
 	}
 
 	// unmarshal
-	var database_config app_db.DataBaseConfig
-	error_info = json.Unmarshal(data, &database_config)
-	if error_info != nil {
-		panic(error_info)
+	var databaseConfig app_db.DataBaseConfig
+	errorInfo = json.Unmarshal(data, &databaseConfig)
+	if errorInfo != nil {
+		panic(errorInfo)
 	}
 
-	return database_config
+	return databaseConfig
 }
 
 // generate the hash using the provided input string
@@ -75,15 +75,15 @@ func GetDataBaseConfig() app_db.DataBaseConfig {
 
 func GenerateHash(input string) string {
 
-	sha256_hash := sha256.New()
+	sha256Hash := sha256.New()
 
-	if _, error_info := sha256_hash.Write([]byte(input)); error_info != nil {
-		panic(error_info)
+	if _, errorInfo := sha256Hash.Write([]byte(input)); errorInfo != nil {
+		panic(errorInfo)
 	}
 
-	byte_slice := sha256_hash.Sum(nil)
+	byteSlice := sha256Hash.Sum(nil)
 
-	return fmt.Sprintf("%x", byte_slice)
+	return fmt.Sprintf("%x", byteSlice)
 
 }
 

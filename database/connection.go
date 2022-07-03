@@ -7,16 +7,16 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// connect to the database
+// Open connect to the database
 // returns the DB handle
 func (db *DataBase) Open() (bool, int) {
 
 	// open the connection to db
-	data_source := db.Config.User + ":" + db.Config.Password + "@/" + db.Config.Schema
-	database_connection, error_info := sql.Open("mysql", data_source)
-	if error_info != nil {
+	dataSource := db.Config.User + ":" + db.Config.Password + "@/" + db.Config.Schema
+	databaseConnection, errorInfo := sql.Open("mysql", dataSource)
+	if errorInfo != nil {
 		return false, app_error.DbOpenFailed
 	}
-	db.Connector = database_connection
+	db.Connector = databaseConnection
 	return true, app_error.Success
 }

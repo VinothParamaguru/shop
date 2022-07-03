@@ -4,28 +4,28 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func (db *DataBase) Insert(table_name string, fields []Field) {
+func (db *DataBase) Insert(tableName string, fields []Field) {
 
 	//total_fields := len(fields)
-	insert_query := "INSERT INTO " + table_name + " ("
+	insertQuery := "INSERT INTO " + tableName + " ("
 	for _, field := range fields {
-		insert_query += field.Name
-		insert_query += ","
+		insertQuery += field.Name
+		insertQuery += ","
 	}
-	insert_query = insert_query[:len(insert_query)-1]
-	insert_query += ") VALUES ("
+	insertQuery = insertQuery[:len(insertQuery)-1]
+	insertQuery += ") VALUES ("
 	for i := 0; i < len(fields); i++ {
-		insert_query += "?,"
+		insertQuery += "?,"
 	}
-	insert_query = insert_query[:len(insert_query)-1]
-	insert_query += ")"
+	insertQuery = insertQuery[:len(insertQuery)-1]
+	insertQuery += ")"
 
 	// prepare statement for insert
 
-	insert_statement, error_info := db.Connector.Prepare(insert_query)
+	insertStatement, errorInfo := db.Connector.Prepare(insertQuery)
 
-	if error_info != nil {
-		panic(error_info)
+	if errorInfo != nil {
+		panic(errorInfo)
 	}
 
 	var values []interface{}
@@ -34,9 +34,9 @@ func (db *DataBase) Insert(table_name string, fields []Field) {
 		values = append(values, field.Value)
 	}
 
-	_, error_info = insert_statement.Exec(values...)
+	_, errorInfo = insertStatement.Exec(values...)
 
-	if error_info != nil {
-		panic(error_info)
+	if errorInfo != nil {
+		panic(errorInfo)
 	}
 }

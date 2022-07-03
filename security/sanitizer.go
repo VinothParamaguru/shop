@@ -13,8 +13,8 @@ type ValidatorParams struct {
 }
 
 func ValidateEmail(email string) (bool, int) {
-	_, error := mail.ParseAddress(email)
-	if error == nil {
+	_, err := mail.ParseAddress(email)
+	if err == nil {
 		return true, app_error.Success
 	}
 	return false, app_error.InvalidInput
@@ -22,31 +22,31 @@ func ValidateEmail(email string) (bool, int) {
 
 func ValidatePassword(password string) (bool, int) {
 
-	// should be atleast 8 characters long
+	// should be at least 8 characters long
 	if len(password) < 8 {
 		return false, app_error.InvalidInput
 	}
 
-	status_upper := false
-	status_lower := false
-	status_special := false
+	statusUpper := false
+	statusLower := false
+	statusSpecial := false
 
 	for _, char := range password {
 		// should contain one uppercase
 		if char >= 'A' && char <= 'Z' {
-			status_upper = true
+			statusUpper = true
 		}
 		// should contain one lowercase
 		if char >= 'a' && char <= 'z' {
-			status_lower = true
+			statusLower = true
 		}
 		// should contain one special character
 		if char == '@' || char == '$' || char == '£' {
-			status_special = true
+			statusSpecial = true
 		}
 	}
 
-	if status_upper && status_lower && status_special {
+	if statusUpper && statusLower && statusSpecial {
 		return true, app_error.Success
 	}
 
@@ -61,19 +61,19 @@ func ValidateField(value string, expression string) (bool, int) {
 	return false, app_error.InvalidInput
 }
 
-var validator_mappings = map[string]ValidatorParams{
+var validatorMappings = map[string]ValidatorParams{
 	"email":    {ValidateEmail, nil, ""},
 	"name":     {nil, ValidateField, "^[A-Z][-'a-zA-Z]+$"},
 	"password": {ValidatePassword, nil, ""},
 }
 
-// treat all the values as strings for now, for simplicity
+// ValidateInput treat all the values as strings for now, for simplicity
 func ValidateInput(name string, value string) (bool, int) {
-	expression := validator_mappings[name].Expression
+	expression := validatorMappings[name].Expression
 	if expression == "" {
-		return validator_mappings[name].ValidatorCustom(value)
+		return validatorMappings[name].ValidatorCustom(value)
 	} else {
-		return validator_mappings[name].ValidatorRegex(value, expression)
+		return validatorMappings[name].ValidatorRegex(value, expression)
 	}
 }
 

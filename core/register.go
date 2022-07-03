@@ -21,81 +21,81 @@ type Register struct {
 	DateOfBirth string `json:"date_of_birth"`
 }
 
-// Register the user
-func RegisterUser(http_response_writer http.ResponseWriter,
-	http_request *http.Request) {
+// RegisterUser Register the user
+func RegisterUser(httpResponseWriter http.ResponseWriter,
+	httpRequest *http.Request) {
 
 	fmt.Println("Registration... called")
-	payload, error := ioutil.ReadAll(http_request.Body)
-	if error != nil {
-		panic(error)
+	payload, err := ioutil.ReadAll(httpRequest.Body)
+	if err != nil {
+		panic(err)
 	}
-	var register_params Register
-	error = json.Unmarshal(payload, &register_params)
-	if error != nil {
-		panic(error)
+	var registerParams Register
+	err = json.Unmarshal(payload, &registerParams)
+	if err != nil {
+		panic(err)
 	}
 
 	// required field validation
-	status, code := security.ValidateRequiredFields([]string{register_params.Email,
-		register_params.Password})
+	status, code := security.ValidateRequiredFields([]string{registerParams.Email,
+		registerParams.Password})
 	if !status {
-		utilities.HandleError(http_response_writer, status, code)
+		utilities.HandleError(httpResponseWriter, status, code)
 		return
 	}
 
 	// input fields validation
-	status, code = security.ValidateInput("email", register_params.Email)
+	status, code = security.ValidateInput("email", registerParams.Email)
 	if !status {
-		utilities.HandleError(http_response_writer, status, code)
+		utilities.HandleError(httpResponseWriter, status, code)
 		return
 	}
 
-	status, code = security.ValidateInput("password", register_params.Password)
+	status, code = security.ValidateInput("password", registerParams.Password)
 	if !status {
-		utilities.HandleError(http_response_writer, status, code)
+		utilities.HandleError(httpResponseWriter, status, code)
 		return
 	}
 
-	if register_params.Firstname != "" {
-		status, code = security.ValidateInput("name", register_params.Firstname)
+	if registerParams.Firstname != "" {
+		status, code = security.ValidateInput("name", registerParams.Firstname)
 		if !status {
-			utilities.HandleError(http_response_writer, status, code)
+			utilities.HandleError(httpResponseWriter, status, code)
 			return
 		}
 	}
 
-	if register_params.Lastname != "" {
-		status, code = security.ValidateInput("name", register_params.Lastname)
+	if registerParams.Lastname != "" {
+		status, code = security.ValidateInput("name", registerParams.Lastname)
 		if !status {
-			utilities.HandleError(http_response_writer, status, code)
+			utilities.HandleError(httpResponseWriter, status, code)
 			return
 		}
 	}
 
 	// get database configuration
-	database_config := utilities.GetDataBaseConfig()
-	fmt.Println(database_config.Schema)
-	db := app_db.DataBase{Connector: nil, Config: database_config}
+	databaseConfig := utilities.GetDataBaseConfig()
+	fmt.Println(databaseConfig.Schema)
+	db := app_db.DataBase{Connector: nil, Config: databaseConfig}
 
-	password_seed := utilities.GetRandomString(len(register_params.Password))
+	passwordSeed := utilities.GetRandomString(len(registerParams.Password))
 
-	fmt.Println(password_seed)
+	fmt.Println(passwordSeed)
 
-	temporary_hash := utilities.GenerateHash(register_params.Password + password_seed)
+	temporaryHash := utilities.GenerateHash(registerParams.Password + passwordSeed)
 
-	final_hash := utilities.GenerateHash(temporary_hash)
+	finalHash := utilities.GenerateHash(temporaryHash)
 
 	// open the database
 	if status, code = db.Open(); !status {
-		utilities.HandleError(http_response_writer, status, code)
+		utilities.HandleError(httpResponseWriter, status, code)
 	}
 
 	// perform insert
 	fields := []app_db.Field{
 		{Name: "username", Value: "Vinoth1"},
-		{Name: "password", Value: final_hash},
-		{Name: "password_seed", Value: password_seed},
+		{Name: "password", Value: finalHash},
+		{Name: "password_seed", Value: passwordSeed},
 	}
 
 	db.Insert("users", fields)

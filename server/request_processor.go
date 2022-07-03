@@ -5,7 +5,7 @@ import (
 	"workspace/shop/core"
 )
 
-// start the http server
+// Start  the http server
 func Start() {
 
 	http.HandleFunc("/Register", core.RegisterUser)
