@@ -104,3 +104,9 @@ func GetRandomString(length int) string {
 	}
 	return string(bytes)
 }
+
+func HandlePanic(err any) {
+	if err != nil {
+		panic(err)
+	}
+}

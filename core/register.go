@@ -16,7 +16,7 @@ import (
 type Register struct {
 	Firstname   string `json:"firstname"`
 	Lastname    string `json:"lastname"`
-	Email       string `json:"email"`
+	Username    string `json:"username"`
 	Password    string `json:"password"`
 	DateOfBirth string `json:"date_of_birth"`
 }
@@ -37,7 +37,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	}
 
 	// required field validation
-	status, code := security.ValidateRequiredFields([]string{registerParams.Email,
+	status, code := security.ValidateRequiredFields([]string{registerParams.Username,
 		registerParams.Password})
 	if !status {
 		utilities.HandleError(httpResponseWriter, status, code)
@@ -45,7 +45,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	}
 
 	// input fields validation
-	status, code = security.ValidateInput("email", registerParams.Email)
+	status, code = security.ValidateInput("email", registerParams.Username)
 	if !status {
 		utilities.HandleError(httpResponseWriter, status, code)
 		return
@@ -93,7 +93,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 
 	// perform insert
 	fields := []app_db.Field{
-		{Name: "email", Value: registerParams.Email},
+		{Name: "username", Value: registerParams.Username},
 		{Name: "password", Value: hashedPassword},
 		{Name: "password_seed", Value: passwordSeed},
 	}
