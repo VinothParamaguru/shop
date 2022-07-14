@@ -74,7 +74,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	}
 
 	// get database configuration
-	databaseConfig := utilities.GetDataBaseConfig()
+	databaseConfig := app_db.GetDataBaseConfig()
 	fmt.Println(databaseConfig.Schema)
 	db := app_db.DataBase{Connector: nil, Config: databaseConfig}
 

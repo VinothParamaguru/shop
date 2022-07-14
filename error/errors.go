@@ -10,7 +10,8 @@ const (
 	FieldMissing = 1001
 
 	// database errors
-	DbOpenFailed = 2000
+	DbOpenFailed             = 2000
+	DbBindParamNotApplicable = 2001
 )
 
 // ErrorDescriptions Error code and descriptions map

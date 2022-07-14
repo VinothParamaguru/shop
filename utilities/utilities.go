@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"path/filepath"
-	app_db "workspace/shop/database"
 	app_error "workspace/shop/error"
 )
 
@@ -41,33 +39,6 @@ func HandleError(httpResponseWriter http.ResponseWriter, status bool, code int) 
 		}
 		httpResponseWriter.Write(jsonResponse)
 	}
-}
-
-func GetDataBaseConfig() app_db.DataBaseConfig {
-
-	// read the database configuration file
-	// using relative path for now. This should be replaced by absolute path of the file
-	configFileRelativePath := "config/database_config.json"
-	configFileAbsolutePath, errorInfo := filepath.Abs(configFileRelativePath)
-
-	if errorInfo != nil {
-		panic(errorInfo)
-	}
-
-	// read
-	data, errorInfo := ioutil.ReadFile(configFileAbsolutePath)
-	if errorInfo != nil {
-		panic(errorInfo)
-	}
-
-	// unmarshal
-	var databaseConfig app_db.DataBaseConfig
-	errorInfo = json.Unmarshal(data, &databaseConfig)
-	if errorInfo != nil {
-		panic(errorInfo)
-	}
-
-	return databaseConfig
 }
 
 // generate the hash using the provided input string
@@ -109,4 +80,39 @@ func HandlePanic(err any) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func ParamInAcceptableCharRange(paramChar byte) bool {
+	if paramChar >= '0' || paramChar <= '8' ||
+		paramChar >= 'A' || paramChar <= 'Z' ||
+		paramChar >= 'a' || paramChar <= 'z' {
+		return true
+	}
+	return false
+}
+
+func GetSqlParams(sql string) []string {
+
+	var sqlParams []string
+
+	sqlLength := len(sql)
+	sqlParsed := false
+	for pos, char := range sql {
+		if char == '@' {
+			param := "@"
+			for i := pos + 1; i < sqlLength && ParamInAcceptableCharRange(sql[i]) && sql[i] != ' '; i++ {
+				param += string(sql[i])
+				if i+1 == sqlLength {
+					sqlParsed = true
+				}
+			}
+			sqlParams = append(sqlParams, param)
+			if sqlParsed == true {
+				break
+			}
+		}
+	}
+
+	return sqlParams
+
 }
