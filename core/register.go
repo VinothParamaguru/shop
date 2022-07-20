@@ -40,27 +40,27 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	status, code := security.ValidateRequiredFields([]string{registerParams.Username,
 		registerParams.Password})
 	if !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleSecurityError(httpResponseWriter, status, code)
 		return
 	}
 
 	// input fields validation
 	status, code = security.ValidateInput("email", registerParams.Username)
 	if !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleSecurityError(httpResponseWriter, status, code)
 		return
 	}
 
 	status, code = security.ValidateInput("password", registerParams.Password)
 	if !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleSecurityError(httpResponseWriter, status, code)
 		return
 	}
 
 	if registerParams.Firstname != "" {
 		status, code = security.ValidateInput("name", registerParams.Firstname)
 		if !status {
-			utilities.HandleError(httpResponseWriter, status, code)
+			utilities.HandleSecurityError(httpResponseWriter, status, code)
 			return
 		}
 	}
@@ -68,7 +68,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	if registerParams.Lastname != "" {
 		status, code = security.ValidateInput("name", registerParams.Lastname)
 		if !status {
-			utilities.HandleError(httpResponseWriter, status, code)
+			utilities.HandleSecurityError(httpResponseWriter, status, code)
 			return
 		}
 	}
@@ -88,7 +88,7 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 
 	// open the database
 	if status, code = db.Open(); !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleDataBaseError(httpResponseWriter, status, code)
 	}
 
 	// perform insert

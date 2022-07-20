@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	app_db "workspace/shop/database"
+	"workspace/shop/errors"
 	"workspace/shop/security"
 	"workspace/shop/utilities"
 )
@@ -28,17 +29,17 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	status, code := security.ValidateRequiredFields([]string{loginParams.Username,
 		loginParams.Password})
 	if !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleSecurityError(httpResponseWriter, status, code)
 	}
 
 	status, code = security.ValidateInput("email", loginParams.Username)
 	if !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleSecurityError(httpResponseWriter, status, code)
 	}
 
 	status, code = security.ValidateInput("password", loginParams.Username)
 	if !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleSecurityError(httpResponseWriter, status, code)
 	}
 
 	// get database configuration
@@ -48,9 +49,34 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 
 	// open the database
 	if status, code = db.Open(); !status {
-		utilities.HandleError(httpResponseWriter, status, code)
+		utilities.HandleDataBaseError(httpResponseWriter, status, code)
 	}
 
-	db.InitSql("SELECT * FROM users where username = @username")
+	db.InitSql("SELECT username, password as hashed_password, " +
+		"password_seed  FROM users where username = @username")
+	db.BindParam("@username", loginParams.Username)
+	status, code, results := db.Select()
+
+	var (
+		username             string
+		hashedPasswordStored string
+		passwordSeed         string
+	)
+
+	if status && results.Next() {
+		errorInfo := results.Scan(&username, &hashedPasswordStored, &passwordSeed)
+		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
+		hashedPassword := utilities.GenerateHash(temporaryHash)
+		if hashedPasswordStored != hashedPassword {
+
+		}
+		if errorInfo != nil {
+			utilities.HandleDataBaseError(httpResponseWriter, false,
+				errors.DbErrorQueryExecution)
+		}
+
+	} else {
+		utilities.HandleDataBaseError(httpResponseWriter, status, code)
+	}
 
 }

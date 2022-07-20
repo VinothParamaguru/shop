@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-	app_error "workspace/shop/error"
+	"workspace/shop/errors"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -15,9 +15,9 @@ func (db *DataBase) Open() (bool, int) {
 	dataSource := db.Config.User + ":" + db.Config.Password + "@/" + db.Config.Schema
 	databaseConnection, errorInfo := sql.Open("mysql", dataSource)
 	if errorInfo != nil {
-		return false, app_error.DbOpenFailed
+		return false, errors.DbOpenFailed
 	}
 	db.Connector = databaseConnection
 	db.ParamsMap = make(map[string]interface{})
-	return true, app_error.Success
+	return true, errors.Success
 }

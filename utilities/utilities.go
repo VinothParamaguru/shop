@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	app_error "workspace/shop/error"
+	"workspace/shop/errors"
 )
 
 // ExtractPayloadAsString extract the http payload as string
@@ -26,13 +26,43 @@ func WriteMessage() {
 
 }
 
-// HandleError Handle the error using the api return status and error code returned
-func HandleError(httpResponseWriter http.ResponseWriter, status bool, code int) {
+// HandleSecurityError . Handle the security error using the api return status and error code returned
+func HandleSecurityError(httpResponseWriter http.ResponseWriter, status bool, code int) {
 
-	if !status && code != app_error.Success {
+	if !status && code != errors.Success {
 		httpResponseWriter.Header().Set("Content-Type", "application/json")
 		httpResponseWriter.WriteHeader(http.StatusBadRequest)
-		responseParams := app_error.ErrorResponse{Code: code, Description: app_error.ErrorDescriptions[code]}
+		responseParams := errors.ErrorResponse{Code: code, Description: errors.SecurityErrorDescriptions[code]}
+		jsonResponse, err := json.Marshal(responseParams)
+		if err != nil {
+			panic(err)
+		}
+		httpResponseWriter.Write(jsonResponse)
+	}
+}
+
+// HandleDataBaseError . Handle the database error using the api return status and error code returned
+func HandleDataBaseError(httpResponseWriter http.ResponseWriter, status bool, code int) {
+
+	if !status && code != errors.Success {
+		httpResponseWriter.Header().Set("Content-Type", "application/json")
+		httpResponseWriter.WriteHeader(http.StatusBadRequest)
+		responseParams := errors.ErrorResponse{Code: code, Description: errors.DataBaseErrorDescriptions[code]}
+		jsonResponse, err := json.Marshal(responseParams)
+		if err != nil {
+			panic(err)
+		}
+		httpResponseWriter.Write(jsonResponse)
+	}
+}
+
+// HandleApplicationError . Handle the application error using the api return status and error code returned
+func HandleApplicationError(httpResponseWriter http.ResponseWriter, status bool, code int) {
+
+	if !status && code != errors.Success {
+		httpResponseWriter.Header().Set("Content-Type", "application/json")
+		httpResponseWriter.WriteHeader(http.StatusBadRequest)
+		responseParams := errors.ErrorResponse{Code: code, Description: errors.SecurityErrorDescriptions[code]}
 		jsonResponse, err := json.Marshal(responseParams)
 		if err != nil {
 			panic(err)

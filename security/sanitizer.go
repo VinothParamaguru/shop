@@ -3,7 +3,7 @@ package security
 import (
 	"net/mail"
 	"regexp"
-	app_error "workspace/shop/error"
+	"workspace/shop/errors"
 )
 
 type ValidatorParams struct {
@@ -15,16 +15,16 @@ type ValidatorParams struct {
 func ValidateEmail(email string) (bool, int) {
 	_, err := mail.ParseAddress(email)
 	if err == nil {
-		return true, app_error.Success
+		return true, errors.Success
 	}
-	return false, app_error.InvalidInput
+	return false, errors.InvalidInput
 }
 
 func ValidatePassword(password string) (bool, int) {
 
 	// should be at least 8 characters long
 	if len(password) < 8 {
-		return false, app_error.InvalidInput
+		return false, errors.InvalidInput
 	}
 
 	statusUpper := false
@@ -47,18 +47,18 @@ func ValidatePassword(password string) (bool, int) {
 	}
 
 	if statusUpper && statusLower && statusSpecial {
-		return true, app_error.Success
+		return true, errors.Success
 	}
 
-	return false, app_error.InvalidInput
+	return false, errors.InvalidInput
 }
 
 func ValidateField(value string, expression string) (bool, int) {
 	match, _ := regexp.MatchString(expression, value)
 	if match {
-		return true, app_error.Success
+		return true, errors.Success
 	}
-	return false, app_error.InvalidInput
+	return false, errors.InvalidInput
 }
 
 var validatorMappings = map[string]ValidatorParams{
@@ -81,8 +81,8 @@ func ValidateRequiredFields(fields []string) (bool, int) {
 
 	for _, field := range fields {
 		if field == "" {
-			return false, app_error.FieldMissing
+			return false, errors.FieldMissing
 		}
 	}
-	return true, app_error.Success
+	return true, errors.Success
 }
