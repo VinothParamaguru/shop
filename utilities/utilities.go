@@ -62,13 +62,24 @@ func HandleApplicationError(httpResponseWriter http.ResponseWriter, status bool,
 	if !status && code != errors.Success {
 		httpResponseWriter.Header().Set("Content-Type", "application/json")
 		httpResponseWriter.WriteHeader(http.StatusBadRequest)
-		responseParams := errors.ErrorResponse{Code: code, Description: errors.SecurityErrorDescriptions[code]}
+		responseParams := errors.ErrorResponse{Code: code, Description: errors.ApplicationErrorDescriptions[code]}
 		jsonResponse, err := json.Marshal(responseParams)
 		if err != nil {
 			panic(err)
 		}
 		httpResponseWriter.Write(jsonResponse)
 	}
+}
+
+// SendResponse . Send the json response to the client
+func SendResponse(httpResponseWriter http.ResponseWriter, payload any) {
+	httpResponseWriter.Header().Set("Content-Type", "application/json")
+	httpResponseWriter.WriteHeader(http.StatusOK)
+	jsonResponse, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+	httpResponseWriter.Write(jsonResponse)
 }
 
 // generate the hash using the provided input string

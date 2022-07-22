@@ -37,7 +37,7 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		utilities.HandleSecurityError(httpResponseWriter, status, code)
 	}
 
-	status, code = security.ValidateInput("password", loginParams.Username)
+	status, code = security.ValidateInput("password", loginParams.Password)
 	if !status {
 		utilities.HandleSecurityError(httpResponseWriter, status, code)
 	}
@@ -65,16 +65,22 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 
 	if status && results.Next() {
 		errorInfo := results.Scan(&username, &hashedPasswordStored, &passwordSeed)
-		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
-		hashedPassword := utilities.GenerateHash(temporaryHash)
-		if hashedPasswordStored != hashedPassword {
-
-		}
 		if errorInfo != nil {
 			utilities.HandleDataBaseError(httpResponseWriter, false,
 				errors.DbErrorQueryExecution)
 		}
-
+		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
+		hashedPassword := utilities.GenerateHash(temporaryHash)
+		if hashedPasswordStored != hashedPassword {
+			utilities.HandleApplicationError(httpResponseWriter, false,
+				errors.AppInvalidUserNameOrPassword)
+		} else {
+			type LoginResponse struct {
+				Id int
+			}
+			loginResponse := LoginResponse{Id: 1}
+			utilities.SendResponse(httpResponseWriter, loginResponse)
+		}
 	} else {
 		utilities.HandleDataBaseError(httpResponseWriter, status, code)
 	}

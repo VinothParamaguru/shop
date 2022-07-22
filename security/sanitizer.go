@@ -17,14 +17,14 @@ func ValidateEmail(email string) (bool, int) {
 	if err == nil {
 		return true, errors.Success
 	}
-	return false, errors.InvalidInput
+	return false, errors.SecInvalidInput
 }
 
 func ValidatePassword(password string) (bool, int) {
 
 	// should be at least 8 characters long
 	if len(password) < 8 {
-		return false, errors.InvalidInput
+		return false, errors.SecInvalidInput
 	}
 
 	statusUpper := false
@@ -50,7 +50,7 @@ func ValidatePassword(password string) (bool, int) {
 		return true, errors.Success
 	}
 
-	return false, errors.InvalidInput
+	return false, errors.SecInvalidInput
 }
 
 func ValidateField(value string, expression string) (bool, int) {
@@ -58,7 +58,7 @@ func ValidateField(value string, expression string) (bool, int) {
 	if match {
 		return true, errors.Success
 	}
-	return false, errors.InvalidInput
+	return false, errors.SecInvalidInput
 }
 
 var validatorMappings = map[string]ValidatorParams{
@@ -81,7 +81,7 @@ func ValidateRequiredFields(fields []string) (bool, int) {
 
 	for _, field := range fields {
 		if field == "" {
-			return false, errors.FieldMissing
+			return false, errors.SecFieldMissing
 		}
 	}
 	return true, errors.Success
