@@ -11,9 +11,13 @@ import (
 	"workspace/shop/utilities"
 )
 
-type Login struct {
+type Request struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type Response struct {
+	Id int `json:"id"`
 }
 
 func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request) {
@@ -22,7 +26,7 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	payload, err := ioutil.ReadAll(httpRequest.Body)
 	utilities.HandlePanic(err)
 
-	var loginParams Login
+	var loginParams Request
 	err = json.Unmarshal(payload, &loginParams)
 	utilities.HandlePanic(err)
 
@@ -75,10 +79,7 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 			utilities.HandleApplicationError(httpResponseWriter, false,
 				errors.AppInvalidUserNameOrPassword)
 		} else {
-			type LoginResponse struct {
-				Id int
-			}
-			loginResponse := LoginResponse{Id: 1}
+			loginResponse := Response{Id: 1}
 			utilities.SendResponse(httpResponseWriter, loginResponse)
 		}
 	} else {
