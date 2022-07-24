@@ -17,7 +17,8 @@ type Request struct {
 }
 
 type Response struct {
-	Id int `json:"id"`
+	Token string `json:"token"`
+	Id    int    `json:"id"`
 }
 
 func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request) {
@@ -56,19 +57,19 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		utilities.HandleDataBaseError(httpResponseWriter, status, code)
 	}
 
-	db.InitSql("SELECT username, password as hashed_password, " +
+	db.InitSql("SELECT id, password as hashed_password, " +
 		"password_seed  FROM users where username = @username")
 	db.BindParam("@username", loginParams.Username)
 	status, code, results := db.Select()
 
 	var (
-		username             string
+		id                   int
 		hashedPasswordStored string
 		passwordSeed         string
 	)
 
 	if status && results.Next() {
-		errorInfo := results.Scan(&username, &hashedPasswordStored, &passwordSeed)
+		errorInfo := results.Scan(&id, &hashedPasswordStored, &passwordSeed)
 		if errorInfo != nil {
 			utilities.HandleDataBaseError(httpResponseWriter, false,
 				errors.DbErrorQueryExecution)
@@ -76,10 +77,20 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
 		hashedPassword := utilities.GenerateHash(temporaryHash)
 		if hashedPasswordStored != hashedPassword {
+
+			// login failed
 			utilities.HandleApplicationError(httpResponseWriter, false,
 				errors.AppInvalidUserNameOrPassword)
 		} else {
-			loginResponse := Response{Id: 1}
+
+			// login successful
+			sessionToken := utilities.GenerateRandomToken()
+			fields := []app_db.Field{
+				{Name: "id", Value: id},
+				{Name: "token", Value: sessionToken},
+			}
+			db.Insert("session", fields)
+			loginResponse := Response{Id: id, Token: sessionToken}
 			utilities.SendResponse(httpResponseWriter, loginResponse)
 		}
 	} else {
