@@ -18,6 +18,5 @@ func (db *DataBase) Open() (bool, int) {
 		return false, errors.DbOpenFailed
 	}
 	db.Connector = databaseConnection
-	db.ParamsMap = make(map[string]interface{})
 	return true, errors.Success
 }

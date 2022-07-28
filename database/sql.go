@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"workspace/shop/errors"
@@ -66,6 +65,9 @@ func (db *DataBase) Select() (bool, int, *sql.Rows) {
 
 	results, errorInfo := statement.Query(arguments...)
 
+	// clear the params map
+	defer db.clearParams()
+
 	if errorInfo != nil {
 		return false, errors.DbErrorQueryExecution, nil
 	}
@@ -73,14 +75,37 @@ func (db *DataBase) Select() (bool, int, *sql.Rows) {
 	return true, errors.Success, results
 }
 
+func (db *DataBase) Execute() (bool, int) {
+
+	queryForExecution := db.sqlQuery
+	var arguments []interface{}
+	for key, value := range db.ParamsMap {
+		queryForExecution = strings.Replace(queryForExecution, key, "?", 1)
+		arguments = append(arguments, value)
+	}
+
+	// always use prepare statements for safety.
+	statement, errorInfo := db.Connector.Prepare(queryForExecution)
+
+	_, errorInfo = statement.Exec(arguments...)
+
+	// clear the params map
+	defer db.clearParams()
+
+	if errorInfo != nil {
+		return false, errors.DbErrorQueryExecution
+	}
+
+	return true, errors.Success
+}
+
 func (db *DataBase) InitSql(sql string) {
 	// store the query for later use
 	db.sqlQuery = sql
+	db.ParamsMap = make(map[string]interface{})
 	sqlParams := utilities.GetSqlParams(sql)
-	fmt.Print(sqlParams)
 	for _, param := range sqlParams {
 		db.ParamsMap[param] = 0
-		fmt.Print(param)
 	}
 }
 
@@ -94,4 +119,14 @@ func (db *DataBase) BindParam(param string, value any) (bool, int) {
 	db.ParamsMap[param] = value
 
 	return true, errors.Success
+}
+
+func (db *DataBase) clearParams() {
+
+	// clear the entries in the map that holds the params
+	// this is to ensure the params are re-initiated when the Select
+	// call is used multiple times from the same connection
+	for key, _ := range db.ParamsMap {
+		delete(db.ParamsMap, key)
+	}
 }

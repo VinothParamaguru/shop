@@ -123,13 +123,17 @@ func HandlePanic(err any) {
 	}
 }
 
-func ParamInAcceptableCharRange(paramChar byte) bool {
+func paramCharInAcceptableRange(paramChar byte) bool {
 	if paramChar >= '0' || paramChar <= '8' ||
 		paramChar >= 'A' || paramChar <= 'Z' ||
 		paramChar >= 'a' || paramChar <= 'z' {
 		return true
 	}
 	return false
+}
+
+func isParamTerminator(paramChar byte) bool {
+	return paramChar == ' ' || paramChar == ','
 }
 
 func GetSqlParams(sql string) []string {
@@ -141,7 +145,9 @@ func GetSqlParams(sql string) []string {
 	for pos, char := range sql {
 		if char == '@' {
 			param := "@"
-			for i := pos + 1; i < sqlLength && ParamInAcceptableCharRange(sql[i]) && sql[i] != ' '; i++ {
+			for i := pos + 1; i < sqlLength &&
+				paramCharInAcceptableRange(sql[i]) &&
+				!isParamTerminator(sql[i]); i++ {
 				param += string(sql[i])
 				if i+1 == sqlLength {
 					sqlParsed = true

@@ -8,6 +8,7 @@ import (
 	app_db "workspace/shop/database"
 	"workspace/shop/errors"
 	"workspace/shop/security"
+	"workspace/shop/static"
 	"workspace/shop/utilities"
 )
 
@@ -35,16 +36,19 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		loginParams.Password})
 	if !status {
 		utilities.HandleSecurityError(httpResponseWriter, status, code)
+		return
 	}
 
 	status, code = security.ValidateInput("email", loginParams.Username)
 	if !status {
 		utilities.HandleSecurityError(httpResponseWriter, status, code)
+		return
 	}
 
 	status, code = security.ValidateInput("password", loginParams.Password)
 	if !status {
 		utilities.HandleSecurityError(httpResponseWriter, status, code)
+		return
 	}
 
 	// get database configuration
@@ -55,24 +59,27 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	// open the database
 	if status, code = db.Open(); !status {
 		utilities.HandleDataBaseError(httpResponseWriter, status, code)
+		return
 	}
 
 	db.InitSql("SELECT id, password as hashed_password, " +
 		"password_seed  FROM users where username = @username")
 	db.BindParam("@username", loginParams.Username)
-	status, code, results := db.Select()
+	status, code, userResults := db.Select()
 
 	var (
-		id                   int
+		userId               int
 		hashedPasswordStored string
 		passwordSeed         string
 	)
 
-	if status && results.Next() {
-		errorInfo := results.Scan(&id, &hashedPasswordStored, &passwordSeed)
+	if status && userResults.Next() {
+
+		errorInfo := userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed)
 		if errorInfo != nil {
 			utilities.HandleDataBaseError(httpResponseWriter, false,
 				errors.DbErrorQueryExecution)
+			return
 		}
 		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
 		hashedPassword := utilities.GenerateHash(temporaryHash)
@@ -81,20 +88,74 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 			// login failed
 			utilities.HandleApplicationError(httpResponseWriter, false,
 				errors.AppInvalidUserNameOrPassword)
+
+			// delete the session token associated with the user here
+			return
 		} else {
 
 			// login successful
-			sessionToken := utilities.GenerateRandomToken()
-			fields := []app_db.Field{
-				{Name: "id", Value: id},
-				{Name: "token", Value: sessionToken},
+
+			// check if there is an ongoing session for the current user
+			// if there is one, delete the session by deleting the session token
+
+			db.InitSql("SELECT id FROM session where fkid_users = @id")
+			db.BindParam("@id", userId)
+			status, code, sessionResults := db.Select()
+
+			if status && sessionResults.Next() {
+
+				// login successful but there is a session token
+				// already
+				// Active session existing update the session token
+				sessionToken := utilities.GenerateRandomToken()
+				updateStatus, updateCode := updateSession(&db, userId, sessionToken)
+				if !updateStatus {
+					utilities.HandleDataBaseError(httpResponseWriter, updateStatus, updateCode)
+					return
+				}
+				loginResponse := Response{Id: userId, Token: sessionToken}
+				utilities.SendResponse(httpResponseWriter, loginResponse)
+
+			} else if status && !sessionResults.Next() {
+
+				// login successful for the first time
+				sessionToken := utilities.GenerateRandomToken()
+				createSession(&db, userId, sessionToken)
+				loginResponse := Response{Id: userId, Token: sessionToken}
+				utilities.SendResponse(httpResponseWriter, loginResponse)
+
+			} else if !status {
+				utilities.HandleDataBaseError(httpResponseWriter, status, code)
+				return
 			}
-			db.Insert("session", fields)
-			loginResponse := Response{Id: id, Token: sessionToken}
-			utilities.SendResponse(httpResponseWriter, loginResponse)
 		}
 	} else {
 		utilities.HandleDataBaseError(httpResponseWriter, status, code)
+		return
 	}
 
+}
+
+func createSession(db *app_db.DataBase, userId int, token string) {
+
+	fields := []app_db.Field{
+		{Name: "fkid_users", Value: userId},
+		{Name: "fkid_token_types", Value: static.GetSessionTokenType()},
+		{Name: "token", Value: token},
+		{Name: "session_start_time",
+			Value: utilities.GetCurrentTimeStampString()},
+	}
+	db.Insert("session", fields)
+}
+
+func updateSession(db *app_db.DataBase, userId int, token string) (status bool, code int) {
+
+	db.InitSql("UPDATE session SET token = @token, " +
+		"session_start_time = @session_start_time " +
+		"WHERE fkid_users = @user_id")
+	db.BindParam("@token", token)
+	db.BindParam("@session_start_time",
+		utilities.GetCurrentTimeStampString())
+	db.BindParam("@user_id", userId)
+	return db.Execute()
 }
