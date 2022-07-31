@@ -15,6 +15,7 @@ type DataBaseConfig struct {
 type DataBase struct {
 	Connector *sql.DB
 	Config    DataBaseConfig
+	Params    []string
 	ParamsMap map[string]interface{}
 	sqlQuery  string
 }

@@ -78,7 +78,7 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		errorInfo := userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed)
 		if errorInfo != nil {
 			utilities.HandleDataBaseError(httpResponseWriter, false,
-				errors.DbErrorQueryExecution)
+				errors.DbErrorScanning)
 			return
 		}
 		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)

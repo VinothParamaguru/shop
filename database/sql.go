@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"workspace/shop/errors"
@@ -55,9 +56,10 @@ func (db *DataBase) Select() (bool, int, *sql.Rows) {
 	}
 	queryForExecution := db.sqlQuery
 	var arguments []interface{}
-	for key, value := range db.ParamsMap {
-		queryForExecution = strings.Replace(queryForExecution, key, "?", 1)
-		arguments = append(arguments, value)
+	for _, paramName := range db.Params {
+		paramValue := db.ParamsMap[paramName]
+		queryForExecution = strings.Replace(queryForExecution, paramName, "?", 1)
+		arguments = append(arguments, paramValue)
 	}
 
 	// always use prepare statements for safety.
@@ -69,7 +71,7 @@ func (db *DataBase) Select() (bool, int, *sql.Rows) {
 	defer db.clearParams()
 
 	if errorInfo != nil {
-		return false, errors.DbErrorQueryExecution, nil
+		return false, errors.DbErrorSelectQueryExecution, nil
 	}
 
 	return true, errors.Success, results
@@ -79,9 +81,10 @@ func (db *DataBase) Execute() (bool, int) {
 
 	queryForExecution := db.sqlQuery
 	var arguments []interface{}
-	for key, value := range db.ParamsMap {
-		queryForExecution = strings.Replace(queryForExecution, key, "?", 1)
-		arguments = append(arguments, value)
+	for _, paramName := range db.Params {
+		paramValue := db.ParamsMap[paramName]
+		queryForExecution = strings.Replace(queryForExecution, paramName, "?", 1)
+		arguments = append(arguments, paramValue)
 	}
 
 	// always use prepare statements for safety.
@@ -93,6 +96,7 @@ func (db *DataBase) Execute() (bool, int) {
 	defer db.clearParams()
 
 	if errorInfo != nil {
+		fmt.Println(errorInfo.Error())
 		return false, errors.DbErrorQueryExecution
 	}
 
@@ -106,6 +110,7 @@ func (db *DataBase) InitSql(sql string) {
 	sqlParams := utilities.GetSqlParams(sql)
 	for _, param := range sqlParams {
 		db.ParamsMap[param] = 0
+		db.Params = append(db.Params, param)
 	}
 }
 
@@ -126,6 +131,7 @@ func (db *DataBase) clearParams() {
 	// clear the entries in the map that holds the params
 	// this is to ensure the params are re-initiated when the Select
 	// call is used multiple times from the same connection
+	db.Params = nil
 	for key, _ := range db.ParamsMap {
 		delete(db.ParamsMap, key)
 	}
