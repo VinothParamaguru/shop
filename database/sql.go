@@ -2,10 +2,11 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
-	"workspace/shop/errors"
+	apperrors "workspace/shop/errors"
 	"workspace/shop/utilities"
 )
 
@@ -26,33 +27,27 @@ func (db *DataBase) Insert(tableName string, fields []Field) {
 	insertQuery += ")"
 
 	// prepare statement for insert
-
 	insertStatement, errorInfo := db.Connector.Prepare(insertQuery)
-
 	if errorInfo != nil {
 		panic(errorInfo)
 	}
-
 	var values []interface{}
-
 	for _, field := range fields {
 		values = append(values, field.Value)
 	}
-
 	_, errorInfo = insertStatement.Exec(values...)
-
 	if errorInfo != nil {
 		panic(errorInfo)
 	}
 }
 
-func (db *DataBase) Select() (bool, int, *sql.Rows) {
+func (db *DataBase) Select() (*sql.Rows, error) {
 
 	// check the Select() call is valid for the SQL query with which
 	// the database object was instantiated
 	splittedQuery := strings.Split(db.sqlQuery, " ")
 	if splittedQuery[0] != "SELECT" {
-		return false, errors.DbInvalidQuery, nil
+		return nil, errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbInvalidQuery])
 	}
 	queryForExecution := db.sqlQuery
 	var arguments []interface{}
@@ -61,23 +56,18 @@ func (db *DataBase) Select() (bool, int, *sql.Rows) {
 		queryForExecution = strings.Replace(queryForExecution, paramName, "?", 1)
 		arguments = append(arguments, paramValue)
 	}
-
 	// always use prepare statements for safety.
 	statement, errorInfo := db.Connector.Prepare(queryForExecution)
-
 	results, errorInfo := statement.Query(arguments...)
-
 	// clear the params map
 	defer db.clearParams()
-
 	if errorInfo != nil {
-		return false, errors.DbErrorSelectQueryExecution, nil
+		return nil, errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbErrorSelectQueryExecution])
 	}
-
-	return true, errors.Success, results
+	return results, nil
 }
 
-func (db *DataBase) Execute() (bool, int) {
+func (db *DataBase) Execute() error {
 
 	queryForExecution := db.sqlQuery
 	var arguments []interface{}
@@ -89,18 +79,14 @@ func (db *DataBase) Execute() (bool, int) {
 
 	// always use prepare statements for safety.
 	statement, errorInfo := db.Connector.Prepare(queryForExecution)
-
 	_, errorInfo = statement.Exec(arguments...)
-
 	// clear the params map
 	defer db.clearParams()
-
 	if errorInfo != nil {
 		fmt.Println(errorInfo.Error())
-		return false, errors.DbErrorQueryExecution
+		return errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbErrorQueryExecution])
 	}
-
-	return true, errors.Success
+	return nil
 }
 
 func (db *DataBase) InitSql(sql string) {
@@ -114,16 +100,16 @@ func (db *DataBase) InitSql(sql string) {
 	}
 }
 
-func (db *DataBase) BindParam(param string, value any) (bool, int) {
+func (db *DataBase) BindParam(param string, value any) error {
 
 	// Bind has been called without any params for the prepared statement
 	if len(db.ParamsMap) == 0 {
-		return false, errors.DbBindParamNotApplicable
+		return errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbBindParamNotApplicable])
 	}
 
 	db.ParamsMap[param] = value
 
-	return true, errors.Success
+	return nil
 }
 
 func (db *DataBase) clearParams() {

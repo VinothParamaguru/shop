@@ -3,8 +3,9 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"workspace/shop/request"
+	"workspace/shop/response"
 
 	app_db "workspace/shop/database"
 	"workspace/shop/security"
@@ -25,50 +26,56 @@ type Register struct {
 func RegisterUser(httpResponseWriter http.ResponseWriter,
 	httpRequest *http.Request) {
 
-	fmt.Println("Registration... called")
-	payload, err := ioutil.ReadAll(httpRequest.Body)
+	requestProcessor := request.Processor{}
+	responseProcessor := response.Processor{}
+
+	// extract the json payload from the request
+	// with some basic checks
+	payload, err := requestProcessor.ReadRequest(httpRequest)
 	if err != nil {
-		panic(err)
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
 	}
 	var registerParams Register
 	err = json.Unmarshal(payload, &registerParams)
 	if err != nil {
-		panic(err)
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
 	}
 
 	// required field validation
-	status, code := security.ValidateRequiredFields([]string{registerParams.Username,
+	err = security.ValidateRequiredFields([]string{registerParams.Username,
 		registerParams.Password})
-	if !status {
-		utilities.HandleSecurityError(httpResponseWriter, status, code)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
 	// input fields validation
-	status, code = security.ValidateInput("email", registerParams.Username)
-	if !status {
-		utilities.HandleSecurityError(httpResponseWriter, status, code)
+	err = security.ValidateInput("email", registerParams.Username)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
-	status, code = security.ValidateInput("password", registerParams.Password)
-	if !status {
-		utilities.HandleSecurityError(httpResponseWriter, status, code)
+	err = security.ValidateInput("password", registerParams.Password)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
 	if registerParams.Firstname != "" {
-		status, code = security.ValidateInput("name", registerParams.Firstname)
-		if !status {
-			utilities.HandleSecurityError(httpResponseWriter, status, code)
+		err = security.ValidateInput("name", registerParams.Firstname)
+		if err != nil {
+			responseProcessor.SendError(err, httpResponseWriter)
 			return
 		}
 	}
 
 	if registerParams.Lastname != "" {
-		status, code = security.ValidateInput("name", registerParams.Lastname)
-		if !status {
-			utilities.HandleSecurityError(httpResponseWriter, status, code)
+		err = security.ValidateInput("name", registerParams.Lastname)
+		if err != nil {
+			responseProcessor.SendError(err, httpResponseWriter)
 			return
 		}
 	}
@@ -87,8 +94,10 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	hashedPassword := utilities.GenerateHash(temporaryHash)
 
 	// open the database
-	if status, code = db.Open(); !status {
-		utilities.HandleDataBaseError(httpResponseWriter, status, code)
+	err = db.Open()
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
 	}
 
 	// perform insert

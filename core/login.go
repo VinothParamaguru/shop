@@ -2,11 +2,13 @@ package core
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	app_db "workspace/shop/database"
-	"workspace/shop/errors"
+	apperrors "workspace/shop/errors"
+	"workspace/shop/request"
+	"workspace/shop/response"
 	"workspace/shop/security"
 	"workspace/shop/static"
 	"workspace/shop/utilities"
@@ -23,31 +25,35 @@ type Response struct {
 }
 
 func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request) {
-	fmt.Println("Login... called")
 
-	payload, err := ioutil.ReadAll(httpRequest.Body)
-	utilities.HandlePanic(err)
+	requestProcessor := request.Processor{}
+	responseProcessor := response.Processor{}
 
+	payload, err := requestProcessor.ReadRequest(httpRequest)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
+	}
 	var loginParams Request
 	err = json.Unmarshal(payload, &loginParams)
 	utilities.HandlePanic(err)
 
-	status, code := security.ValidateRequiredFields([]string{loginParams.Username,
+	err = security.ValidateRequiredFields([]string{loginParams.Username,
 		loginParams.Password})
-	if !status {
-		utilities.HandleSecurityError(httpResponseWriter, status, code)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
-	status, code = security.ValidateInput("email", loginParams.Username)
-	if !status {
-		utilities.HandleSecurityError(httpResponseWriter, status, code)
+	err = security.ValidateInput("email", loginParams.Username)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
-	status, code = security.ValidateInput("password", loginParams.Password)
-	if !status {
-		utilities.HandleSecurityError(httpResponseWriter, status, code)
+	err = security.ValidateInput("password", loginParams.Password)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
@@ -57,15 +63,16 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	db := app_db.DataBase{Connector: nil, Config: databaseConfig}
 
 	// open the database
-	if status, code = db.Open(); !status {
-		utilities.HandleDataBaseError(httpResponseWriter, status, code)
+	err = db.Open()
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
 	db.InitSql("SELECT id, password as hashed_password, " +
 		"password_seed  FROM users where username = @username")
 	db.BindParam("@username", loginParams.Username)
-	status, code, userResults := db.Select()
+	userResults, err := db.Select()
 
 	var (
 		userId               int
@@ -73,12 +80,10 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		passwordSeed         string
 	)
 
-	if status && userResults.Next() {
-
-		errorInfo := userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed)
-		if errorInfo != nil {
-			utilities.HandleDataBaseError(httpResponseWriter, false,
-				errors.DbErrorScanning)
+	if err == nil && userResults.Next() {
+		err = userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed)
+		if err != nil {
+			responseProcessor.SendError(err, httpResponseWriter)
 			return
 		}
 		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
@@ -86,9 +91,9 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		if hashedPasswordStored != hashedPassword {
 
 			// login failed
-			utilities.HandleApplicationError(httpResponseWriter, false,
-				errors.AppInvalidUserNameOrPassword)
-
+			responseProcessor.SendError(
+				errors.New(apperrors.ApplicationErrorDescriptions[apperrors.AppInvalidUserNameOrPassword]),
+				httpResponseWriter)
 			// delete the session token associated with the user here
 			return
 		} else {
@@ -100,23 +105,23 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 
 			db.InitSql("SELECT id FROM session where fkid_users = @id")
 			db.BindParam("@id", userId)
-			status, code, sessionResults := db.Select()
+			sessionResults, err := db.Select()
 
-			if status && sessionResults.Next() {
+			if err == nil && sessionResults.Next() {
 
 				// login successful but there is a session token
 				// already
 				// Active session existing update the session token
 				sessionToken := utilities.GenerateRandomToken()
-				updateStatus, updateCode := updateSession(&db, userId, sessionToken)
-				if !updateStatus {
-					utilities.HandleDataBaseError(httpResponseWriter, updateStatus, updateCode)
+				err = updateSession(&db, userId, sessionToken)
+				if err != nil {
+					responseProcessor.SendError(err, httpResponseWriter)
 					return
 				}
 				loginResponse := Response{Id: userId, Token: sessionToken}
 				utilities.SendResponse(httpResponseWriter, loginResponse)
 
-			} else if status && !sessionResults.Next() {
+			} else if err == nil && !sessionResults.Next() {
 
 				// login successful for the first time
 				sessionToken := utilities.GenerateRandomToken()
@@ -124,13 +129,13 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 				loginResponse := Response{Id: userId, Token: sessionToken}
 				utilities.SendResponse(httpResponseWriter, loginResponse)
 
-			} else if !status {
-				utilities.HandleDataBaseError(httpResponseWriter, status, code)
+			} else if err != nil {
+				responseProcessor.SendError(err, httpResponseWriter)
 				return
 			}
 		}
 	} else {
-		utilities.HandleDataBaseError(httpResponseWriter, status, code)
+		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
 
@@ -148,7 +153,7 @@ func createSession(db *app_db.DataBase, userId int, token string) {
 	db.Insert("session", fields)
 }
 
-func updateSession(db *app_db.DataBase, userId int, token string) (status bool, code int) {
+func updateSession(db *app_db.DataBase, userId int, token string) error {
 
 	db.InitSql("UPDATE session SET token = @token, " +
 		"session_start_time = @session_start_time " +

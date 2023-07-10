@@ -1,30 +1,31 @@
 package security
 
 import (
+	"errors"
 	"net/mail"
 	"regexp"
-	"workspace/shop/errors"
+	apperrors "workspace/shop/errors"
 )
 
 type ValidatorParams struct {
-	ValidatorCustom func(string) (bool, int)
-	ValidatorRegex  func(string, string) (bool, int)
+	ValidatorCustom func(string) error
+	ValidatorRegex  func(string, string) error
 	Expression      string
 }
 
-func ValidateEmail(email string) (bool, int) {
+func ValidateEmail(email string) error {
 	_, err := mail.ParseAddress(email)
 	if err == nil {
-		return true, errors.Success
+		return nil
 	}
-	return false, errors.SecInvalidInput
+	return errors.New(apperrors.SecurityErrorDescriptions[apperrors.SecInvalidInput])
 }
 
-func ValidatePassword(password string) (bool, int) {
+func ValidatePassword(password string) error {
 
 	// should be at least 8 characters long
 	if len(password) < 8 {
-		return false, errors.SecInvalidInput
+		return errors.New(apperrors.SecurityErrorDescriptions[apperrors.SecInvalidInput])
 	}
 
 	statusUpper := false
@@ -47,18 +48,18 @@ func ValidatePassword(password string) (bool, int) {
 	}
 
 	if statusUpper && statusLower && statusSpecial {
-		return true, errors.Success
+		return nil
 	}
 
-	return false, errors.SecInvalidInput
+	return errors.New(apperrors.SecurityErrorDescriptions[apperrors.SecInvalidInput])
 }
 
-func ValidateField(value string, expression string) (bool, int) {
+func ValidateField(value string, expression string) error {
 	match, _ := regexp.MatchString(expression, value)
 	if match {
-		return true, errors.Success
+		return nil
 	}
-	return false, errors.SecInvalidInput
+	return errors.New(apperrors.SecurityErrorDescriptions[apperrors.SecInvalidInput])
 }
 
 var validatorMappings = map[string]ValidatorParams{
@@ -68,7 +69,7 @@ var validatorMappings = map[string]ValidatorParams{
 }
 
 // ValidateInput treat all the values as strings for now, for simplicity
-func ValidateInput(name string, value string) (bool, int) {
+func ValidateInput(name string, value string) error {
 	expression := validatorMappings[name].Expression
 	if expression == "" {
 		return validatorMappings[name].ValidatorCustom(value)
@@ -77,12 +78,11 @@ func ValidateInput(name string, value string) (bool, int) {
 	}
 }
 
-func ValidateRequiredFields(fields []string) (bool, int) {
-
+func ValidateRequiredFields(fields []string) error {
 	for _, field := range fields {
 		if field == "" {
-			return false, errors.SecFieldMissing
+			return errors.New(apperrors.SecurityErrorDescriptions[apperrors.SecFieldMissing])
 		}
 	}
-	return true, errors.Success
+	return nil
 }
