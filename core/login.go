@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	app_db "workspace/shop/database"
+	appdb "workspace/shop/database"
 	apperrors "workspace/shop/errors"
 	"workspace/shop/request"
 	"workspace/shop/response"
@@ -58,9 +58,9 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	}
 
 	// get database configuration
-	databaseConfig := app_db.GetDataBaseConfig()
+	databaseConfig := appdb.GetDataBaseConfig()
 	fmt.Println(databaseConfig.Schema)
-	db := app_db.DataBase{Connector: nil, Config: databaseConfig}
+	db := appdb.DataBase{Connector: nil, Config: databaseConfig}
 
 	// open the database
 	err = db.Open()
@@ -141,24 +141,24 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 
 }
 
-func createSession(db *app_db.DataBase, userId int, token string) {
+func createSession(db *appdb.DataBase, userId int, token string) {
 
-	fields := []app_db.Field{
+	fields := []appdb.Field{
 		{Name: "fkid_users", Value: userId},
 		{Name: "fkid_token_types", Value: static.GetSessionTokenType()},
-		{Name: "token", Value: token},
+		{Name: "token", Value: utilities.GenerateHash(token)},
 		{Name: "session_start_time",
 			Value: utilities.GetCurrentTimeStampString()},
 	}
 	db.Insert("session", fields)
 }
 
-func updateSession(db *app_db.DataBase, userId int, token string) error {
+func updateSession(db *appdb.DataBase, userId int, token string) error {
 
 	db.InitSql("UPDATE session SET token = @token, " +
 		"session_start_time = @session_start_time " +
 		"WHERE fkid_users = @user_id")
-	db.BindParam("@token", token)
+	db.BindParam("@token", utilities.GenerateHash(token))
 	db.BindParam("@session_start_time",
 		utilities.GetCurrentTimeStampString())
 	db.BindParam("@user_id", userId)

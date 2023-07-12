@@ -10,7 +10,7 @@ import (
 	"workspace/shop/utilities"
 )
 
-func (db *DataBase) Insert(tableName string, fields []Field) {
+func (db *DataBase) Insert(tableName string, fields []Field) error {
 
 	//total_fields := len(fields)
 	insertQuery := "INSERT INTO " + tableName + " ("
@@ -27,18 +27,19 @@ func (db *DataBase) Insert(tableName string, fields []Field) {
 	insertQuery += ")"
 
 	// prepare statement for insert
-	insertStatement, errorInfo := db.Connector.Prepare(insertQuery)
-	if errorInfo != nil {
-		panic(errorInfo)
+	insertStatement, err := db.Connector.Prepare(insertQuery)
+	if err != nil {
+		return errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbErrorCreatingPreparedStmt])
 	}
 	var values []interface{}
 	for _, field := range fields {
 		values = append(values, field.Value)
 	}
-	_, errorInfo = insertStatement.Exec(values...)
-	if errorInfo != nil {
-		panic(errorInfo)
+	_, err = insertStatement.Exec(values...)
+	if err != nil {
+		return errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbErrorQueryExecution])
 	}
+	return nil
 }
 
 func (db *DataBase) Select() (*sql.Rows, error) {
@@ -57,11 +58,11 @@ func (db *DataBase) Select() (*sql.Rows, error) {
 		arguments = append(arguments, paramValue)
 	}
 	// always use prepare statements for safety.
-	statement, errorInfo := db.Connector.Prepare(queryForExecution)
-	results, errorInfo := statement.Query(arguments...)
+	statement, err := db.Connector.Prepare(queryForExecution)
+	results, err := statement.Query(arguments...)
 	// clear the params map
 	defer db.clearParams()
-	if errorInfo != nil {
+	if err != nil {
 		return nil, errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbErrorSelectQueryExecution])
 	}
 	return results, nil
@@ -78,12 +79,12 @@ func (db *DataBase) Execute() error {
 	}
 
 	// always use prepare statements for safety.
-	statement, errorInfo := db.Connector.Prepare(queryForExecution)
-	_, errorInfo = statement.Exec(arguments...)
+	statement, err := db.Connector.Prepare(queryForExecution)
+	_, err = statement.Exec(arguments...)
 	// clear the params map
 	defer db.clearParams()
-	if errorInfo != nil {
-		fmt.Println(errorInfo.Error())
+	if err != nil {
+		fmt.Println(err.Error())
 		return errors.New(apperrors.DataBaseErrorDescriptions[apperrors.DbErrorQueryExecution])
 	}
 	return nil

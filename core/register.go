@@ -7,7 +7,7 @@ import (
 	"workspace/shop/request"
 	"workspace/shop/response"
 
-	app_db "workspace/shop/database"
+	appdb "workspace/shop/database"
 	"workspace/shop/security"
 	"workspace/shop/utilities"
 )
@@ -81,9 +81,9 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	}
 
 	// get database configuration
-	databaseConfig := app_db.GetDataBaseConfig()
+	databaseConfig := appdb.GetDataBaseConfig()
 	fmt.Println(databaseConfig.Schema)
-	db := app_db.DataBase{Connector: nil, Config: databaseConfig}
+	db := appdb.DataBase{Connector: nil, Config: databaseConfig}
 
 	passwordSeed := utilities.GetRandomString(len(registerParams.Password))
 
@@ -101,19 +101,23 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 	}
 
 	// perform insert
-	fields := []app_db.Field{
+	fields := []appdb.Field{
 		{Name: "username", Value: registerParams.Username},
 		{Name: "password", Value: hashedPassword},
 		{Name: "password_seed", Value: passwordSeed},
 	}
 
 	if registerParams.Firstname != "" {
-		fields = append(fields, app_db.Field{Name: "firstname", Value: registerParams.Firstname})
+		fields = append(fields, appdb.Field{Name: "firstname", Value: registerParams.Firstname})
 	}
 	if registerParams.Lastname != "" {
-		fields = append(fields, app_db.Field{Name: "lastname", Value: registerParams.Lastname})
+		fields = append(fields, appdb.Field{Name: "lastname", Value: registerParams.Lastname})
 	}
 
-	db.Insert("users", fields)
-	fmt.Println(db.Config.Schema)
+	err = db.Insert("users", fields)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
+	}
+	responseProcessor.SendAck(httpResponseWriter)
 }

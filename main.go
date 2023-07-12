@@ -23,7 +23,7 @@ func main() {
 	}
 	defer logfileHandle.Close()
 	log.SetOutput(logfileHandle)
-
+	log.Println("Shop log...")
 	// start the http server for incoming requests
 	server.Start()
 }
