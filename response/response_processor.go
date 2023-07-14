@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"workspace/shop/errors"
+	"shop/errors"
 )
 
 type Processor struct {

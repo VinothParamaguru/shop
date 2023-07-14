@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"workspace/shop/server"
-	"workspace/shop/utilities"
+	"shop/server"
+	"shop/utilities"
 )
 
 func main() {

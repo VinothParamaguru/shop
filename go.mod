@@ -1,4 +1,4 @@
-module workspace/shop
+module shop
 
 go 1.19
 

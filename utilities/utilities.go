@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"workspace/shop/errors"
+	"shop/errors"
 )
 
 // ExtractPayloadAsString extract the http payload as string

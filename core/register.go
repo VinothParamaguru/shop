@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"workspace/shop/request"
-	"workspace/shop/response"
+	"shop/request"
+	"shop/response"
 
-	appdb "workspace/shop/database"
-	"workspace/shop/security"
-	"workspace/shop/utilities"
+	appdb "shop/database"
+	"shop/security"
+	"shop/utilities"
 )
 
 // define the struct for registration

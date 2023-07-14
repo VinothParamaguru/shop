@@ -1,7 +1,7 @@
 package server
 
 import (
-	"workspace/shop/core"
+	"shop/core"
 )
 
 // Start  the http server

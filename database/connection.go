@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
-	apperrors "workspace/shop/errors"
+	apperrors "shop/errors"
 
 	_ "github.com/go-sql-driver/mysql"
 )

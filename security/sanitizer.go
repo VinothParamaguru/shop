@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/mail"
 	"regexp"
-	apperrors "workspace/shop/errors"
+	apperrors "shop/errors"
 )
 
 type ValidatorParams struct {

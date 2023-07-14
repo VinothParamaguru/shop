@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	apperrors "shop/errors"
+	"shop/utilities"
 	"strings"
-	apperrors "workspace/shop/errors"
-	"workspace/shop/utilities"
 )
 
 func (db *DataBase) Insert(tableName string, fields []Field) error {

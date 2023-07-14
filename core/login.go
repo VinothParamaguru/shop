@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	appdb "workspace/shop/database"
-	apperrors "workspace/shop/errors"
-	"workspace/shop/request"
-	"workspace/shop/response"
-	"workspace/shop/security"
-	"workspace/shop/static"
-	"workspace/shop/utilities"
+	appdb "shop/database"
+	apperrors "shop/errors"
+	"shop/request"
+	"shop/response"
+	"shop/security"
+	"shop/static"
+	"shop/utilities"
 )
 
 type Request struct {

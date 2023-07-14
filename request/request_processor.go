@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	apperrors "workspace/shop/errors"
+	apperrors "shop/errors"
 )
 
 type Processor struct {
