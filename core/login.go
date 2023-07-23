@@ -1,9 +1,14 @@
 package core
 
 import (
+	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
+	"image/png"
 	"net/http"
 	appdb "shop/database"
 	apperrors "shop/errors"
@@ -17,11 +22,12 @@ import (
 type Request struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Otp      string `json:"otp"`
 }
 
 type Response struct {
-	Token string `json:"token"`
-	Id    int    `json:"id"`
+	Token     any `json:"token,omitempty"`
+	SecretKey any `json:"secret_key,omitempty"`
 }
 
 func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request) {
@@ -70,18 +76,19 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	}
 
 	db.InitSql("SELECT id, password as hashed_password, " +
-		"password_seed  FROM users where username = @username")
-	db.BindParam("@username", loginParams.Username)
+		"password_seed, secret_key  FROM users where username = @username")
+	_ = db.BindParam("@username", loginParams.Username)
 	userResults, err := db.Select()
 
 	var (
 		userId               int
 		hashedPasswordStored string
 		passwordSeed         string
+		secretKey            sql.NullString
 	)
 
 	if err == nil && userResults.Next() {
-		err = userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed)
+		err = userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed, &secretKey)
 		if err != nil {
 			responseProcessor.SendError(err, httpResponseWriter)
 			return
@@ -90,7 +97,7 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		hashedPassword := utilities.GenerateHash(temporaryHash)
 		if hashedPasswordStored != hashedPassword {
 
-			// login failed
+			// wrong password, login fails
 			responseProcessor.SendError(
 				errors.New(apperrors.ApplicationErrorDescriptions[apperrors.AppInvalidUserNameOrPassword]),
 				httpResponseWriter)
@@ -99,35 +106,53 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		} else {
 
 			// login successful
+			// do otp validation if otp is used in the request
+			// all the successful Login requests doesn't contain otp are used
+			// to generate secrets and treated as if the user is re-initialising the
+			// secret key creation
+
+			sessionToken := utilities.GenerateRandomToken()
+
+			if loginParams.Otp == "" { // user didn't provide otp, secret init call
+				key, _ := totp.Generate(totp.GenerateOpts{
+					Issuer:      "bitssimplified.com",
+					AccountName: loginParams.Username,
+					Algorithm:   otp.AlgorithmSHA1,
+				})
+				_ = updateSecretKey(&db, userId, key.Secret())
+				_ = sendQRCodeToUser(httpResponseWriter, key)
+				return
+			} else { // user provided otp
+				if secretKey.Valid && totp.Validate(loginParams.Otp, secretKey.String) {
+					loginResponse := Response{SecretKey: nil, Token: sessionToken}
+					utilities.SendResponse(httpResponseWriter, loginResponse)
+				} else {
+					// otp wrong, login fails
+					responseProcessor.SendError(
+						errors.New(apperrors.ApplicationErrorDescriptions[apperrors.AppInvalidUserNameOrPassword]),
+						httpResponseWriter)
+					return
+				}
+			}
 
 			// check if there is an ongoing session for the current user
 			// if there is one, delete the session by deleting the session token
 
 			db.InitSql("SELECT id FROM session where fkid_users = @id")
-			db.BindParam("@id", userId)
+			_ = db.BindParam("@id", userId)
 			sessionResults, err := db.Select()
 
 			if err == nil && sessionResults.Next() {
 
-				// login successful but there is a session token
-				// already
+				// login successful but there is a session token already for the user
 				// Active session existing update the session token
-				sessionToken := utilities.GenerateRandomToken()
-				err = updateSession(&db, userId, sessionToken)
-				if err != nil {
-					responseProcessor.SendError(err, httpResponseWriter)
-					return
-				}
-				loginResponse := Response{Id: userId, Token: sessionToken}
-				utilities.SendResponse(httpResponseWriter, loginResponse)
+				_ = updateSession(&db, userId, sessionToken)
 
 			} else if err == nil && !sessionResults.Next() {
 
-				// login successful for the first time
-				sessionToken := utilities.GenerateRandomToken()
-				createSession(&db, userId, sessionToken)
-				loginResponse := Response{Id: userId, Token: sessionToken}
-				utilities.SendResponse(httpResponseWriter, loginResponse)
+				// login successful for the first time, no session exists for the user
+				// create new session
+				_ = createSession(&db, userId, sessionToken)
 
 			} else if err != nil {
 				responseProcessor.SendError(err, httpResponseWriter)
@@ -141,7 +166,7 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 
 }
 
-func createSession(db *appdb.DataBase, userId int, token string) {
+func createSession(db *appdb.DataBase, userId int, token string) error {
 
 	fields := []appdb.Field{
 		{Name: "fkid_users", Value: userId},
@@ -150,7 +175,7 @@ func createSession(db *appdb.DataBase, userId int, token string) {
 		{Name: "session_start_time",
 			Value: utilities.GetCurrentTimeStampString()},
 	}
-	db.Insert("session", fields)
+	return db.Insert("session", fields)
 }
 
 func updateSession(db *appdb.DataBase, userId int, token string) error {
@@ -158,9 +183,31 @@ func updateSession(db *appdb.DataBase, userId int, token string) error {
 	db.InitSql("UPDATE session SET token = @token, " +
 		"session_start_time = @session_start_time " +
 		"WHERE fkid_users = @user_id")
-	db.BindParam("@token", utilities.GenerateHash(token))
-	db.BindParam("@session_start_time",
+	_ = db.BindParam("@token", utilities.GenerateHash(token))
+	_ = db.BindParam("@session_start_time",
 		utilities.GetCurrentTimeStampString())
-	db.BindParam("@user_id", userId)
+	_ = db.BindParam("@user_id", userId)
 	return db.Execute()
+}
+
+func updateSecretKey(db *appdb.DataBase, userId int, secretKey string) error {
+
+	db.InitSql("UPDATE users SET secret_key = @secret_key WHERE id = @user_id")
+	_ = db.BindParam("@secret_key", secretKey)
+	_ = db.BindParam("@user_id", userId)
+	return db.Execute()
+}
+
+func sendQRCodeToUser(httpResponseWriter http.ResponseWriter, key *otp.Key) error {
+	// Convert TOTP key into a PNG
+	var buffer bytes.Buffer
+	img, err := key.Image(200, 200)
+	if err != nil {
+		return err
+	}
+	_ = png.Encode(&buffer, img)
+	httpResponseWriter.WriteHeader(http.StatusOK)
+	httpResponseWriter.Header().Set("Content-Type", "application/octet-stream")
+	_, _ = httpResponseWriter.Write(buffer.Bytes())
+	return nil
 }
