@@ -21,3 +21,7 @@ func (db *DataBase) Open() error {
 	db.Connector = databaseConnection
 	return nil
 }
+
+func (db *DataBase) Close() {
+	_ = db.Connector.Close()
+}

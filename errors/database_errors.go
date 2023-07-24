@@ -9,15 +9,17 @@ const (
 	DbErrorQueryExecution       = 2005
 	DbErrorScanning             = 2006
 	DbErrorCreatingPreparedStmt = 2007
+	DbCloseFailed               = 2008
 )
 
 // DataBaseErrorDescriptions and mappings
 var DataBaseErrorDescriptions = map[int]string{
-	DbOpenFailed:                "Error opening the database",
+	DbOpenFailed:                "Error opening the database connection",
 	DbBindParamNotApplicable:    "Database error, bind param not applicable",
 	DbInvalidQuery:              "Database error, invalid sql query",
 	DbErrorSelectQueryExecution: "Database error, error executing select query",
 	DbErrorQueryExecution:       "Database error, error executing query",
 	DbErrorScanning:             "Database error, error executing query",
 	DbErrorCreatingPreparedStmt: "Database error, error in creating prepared statement",
+	DbCloseFailed:               "Error closing the database connection",
 }

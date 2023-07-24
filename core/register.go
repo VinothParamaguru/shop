@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"shop/request"
 	"shop/response"
@@ -28,7 +27,6 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 
 	requestProcessor := request.Processor{}
 	responseProcessor := response.Processor{}
-
 	// extract the json payload from the request
 	// with some basic checks
 	payload, err := requestProcessor.ReadRequest(httpRequest)
@@ -42,7 +40,6 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	// required field validation
 	err = security.ValidateRequiredFields([]string{registerParams.Username,
 		registerParams.Password})
@@ -50,20 +47,17 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	// input fields validation
 	err = security.ValidateInput("email", registerParams.Username)
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	err = security.ValidateInput("password", registerParams.Password)
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	if registerParams.Firstname != "" {
 		err = security.ValidateInput("name", registerParams.Firstname)
 		if err != nil {
@@ -71,7 +65,6 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 			return
 		}
 	}
-
 	if registerParams.Lastname != "" {
 		err = security.ValidateInput("name", registerParams.Lastname)
 		if err != nil {
@@ -79,41 +72,31 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 			return
 		}
 	}
-
 	// get database configuration
 	databaseConfig := appdb.GetDataBaseConfig()
-	fmt.Println(databaseConfig.Schema)
 	db := appdb.DataBase{Connector: nil, Config: databaseConfig}
-
 	passwordSeed := utilities.GetRandomString(len(registerParams.Password))
-
-	fmt.Println(passwordSeed)
-
 	temporaryHash := utilities.GenerateHash(registerParams.Password + passwordSeed)
-
 	hashedPassword := utilities.GenerateHash(temporaryHash)
-
 	// open the database
 	err = db.Open()
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
+	defer db.Close()
 	// perform insert
 	fields := []appdb.Field{
 		{Name: "username", Value: registerParams.Username},
 		{Name: "password", Value: hashedPassword},
 		{Name: "password_seed", Value: passwordSeed},
 	}
-
 	if registerParams.Firstname != "" {
 		fields = append(fields, appdb.Field{Name: "firstname", Value: registerParams.Firstname})
 	}
 	if registerParams.Lastname != "" {
 		fields = append(fields, appdb.Field{Name: "lastname", Value: registerParams.Lastname})
 	}
-
 	err = db.Insert("users", fields)
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)

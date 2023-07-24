@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
 	"image/png"
@@ -34,7 +32,6 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 
 	requestProcessor := request.Processor{}
 	responseProcessor := response.Processor{}
-
 	payload, err := requestProcessor.ReadRequest(httpRequest)
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
@@ -42,51 +39,46 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 	}
 	var loginParams Request
 	err = json.Unmarshal(payload, &loginParams)
-	utilities.HandlePanic(err)
-
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
+	}
 	err = security.ValidateRequiredFields([]string{loginParams.Username,
 		loginParams.Password})
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	err = security.ValidateInput("email", loginParams.Username)
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	err = security.ValidateInput("password", loginParams.Password)
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 	// get database configuration
 	databaseConfig := appdb.GetDataBaseConfig()
-	fmt.Println(databaseConfig.Schema)
 	db := appdb.DataBase{Connector: nil, Config: databaseConfig}
-
 	// open the database
 	err = db.Open()
 	if err != nil {
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
+	defer db.Close()
 	db.InitSql("SELECT id, password as hashed_password, " +
 		"password_seed, secret_key  FROM users where username = @username")
 	_ = db.BindParam("@username", loginParams.Username)
 	userResults, err := db.Select()
-
 	var (
 		userId               int
 		hashedPasswordStored string
 		passwordSeed         string
 		secretKey            sql.NullString
 	)
-
 	if err == nil && userResults.Next() {
 		err = userResults.Scan(&userId, &hashedPasswordStored, &passwordSeed, &secretKey)
 		if err != nil {
@@ -96,23 +88,19 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		temporaryHash := utilities.GenerateHash(loginParams.Password + passwordSeed)
 		hashedPassword := utilities.GenerateHash(temporaryHash)
 		if hashedPasswordStored != hashedPassword {
-
 			// wrong password, login fails
 			responseProcessor.SendError(
-				errors.New(apperrors.ApplicationErrorDescriptions[apperrors.AppInvalidUserNameOrPassword]),
+				apperrors.GetError(apperrors.AppInvalidUserNameOrPassword),
 				httpResponseWriter)
 			// delete the session token associated with the user here
 			return
 		} else {
-
 			// login successful
 			// do otp validation if otp is used in the request
 			// all the successful Login requests doesn't contain otp are used
 			// to generate secrets and treated as if the user is re-initialising the
 			// secret key creation
-
 			sessionToken := utilities.GenerateRandomToken()
-
 			if loginParams.Otp == "" { // user didn't provide otp, secret init call
 				key, _ := totp.Generate(totp.GenerateOpts{
 					Issuer:      "bitssimplified.com",
@@ -129,31 +117,24 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 				} else {
 					// otp wrong, login fails
 					responseProcessor.SendError(
-						errors.New(apperrors.ApplicationErrorDescriptions[apperrors.AppInvalidUserNameOrPassword]),
+						apperrors.GetError(apperrors.AppInvalidUserNameOrPassword),
 						httpResponseWriter)
 					return
 				}
 			}
-
 			// check if there is an ongoing session for the current user
 			// if there is one, delete the session by deleting the session token
-
 			db.InitSql("SELECT id FROM session where fkid_users = @id")
 			_ = db.BindParam("@id", userId)
 			sessionResults, err := db.Select()
-
 			if err == nil && sessionResults.Next() {
-
 				// login successful but there is a session token already for the user
 				// Active session existing update the session token
 				_ = updateSession(&db, userId, sessionToken)
-
 			} else if err == nil && !sessionResults.Next() {
-
 				// login successful for the first time, no session exists for the user
 				// create new session
 				_ = createSession(&db, userId, sessionToken)
-
 			} else if err != nil {
 				responseProcessor.SendError(err, httpResponseWriter)
 				return
@@ -163,7 +144,6 @@ func LoginUser(httpResponseWriter http.ResponseWriter, httpRequest *http.Request
 		responseProcessor.SendError(err, httpResponseWriter)
 		return
 	}
-
 }
 
 func createSession(db *appdb.DataBase, userId int, token string) error {
