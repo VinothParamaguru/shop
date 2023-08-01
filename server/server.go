@@ -13,7 +13,7 @@ func Start() {
 	listener.Init()
 	listener.RegisterHandler("/Register", core.RegisterUser)
 	listener.RegisterHandler("/Login", core.LoginUser)
-	err := listener.Listen(8000)
+	err := listener.Listen(8080)
 	if err != nil {
 		panic(err)
 	}
