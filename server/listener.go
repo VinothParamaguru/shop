@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
 )
 
 type HttpListener struct {
@@ -17,6 +18,10 @@ func (listener *HttpListener) RegisterHandler(path string, callback http.Handler
 	listener.serverMux.Handle(path, callback)
 }
 
-func (listener *HttpListener) Listen(port int16) error {
-	return http.ListenAndServe(":"+fmt.Sprintf("%d", port), listener.serverMux)
+func (listener *HttpListener) Listen(defaultPort int16) error {
+	envPort := os.Getenv("PORT")
+	if envPort != "" {
+		return http.ListenAndServe(":"+envPort, listener.serverMux)
+	}
+	return http.ListenAndServe(fmt.Sprintf(":%d", defaultPort), listener.serverMux)
 }

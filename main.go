@@ -10,7 +10,7 @@ import (
 
 func main() {
 
-	fmt.Println("Hello, World")
+	fmt.Println("Hello, World, new!")
 
 	// set some global settings
 	// set the random seed
