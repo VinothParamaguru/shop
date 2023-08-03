@@ -26,7 +26,7 @@ RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -
 
 # Copy the binary to the production image from the builder stage.
 COPY --from=builder /app/shop /app/shop
-RUN mkdir -p "/app/logs"
+
 EXPOSE 8080
 # Run the web service on container startup.
 CMD ["/app/shop"]
