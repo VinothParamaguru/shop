@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"net/http"
+	apperrors "shop/errors"
 	"shop/request"
 	"shop/response"
 
@@ -85,6 +86,17 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 		return
 	}
 	defer db.Close()
+	// check if user exists with the same username already
+	userExists, err := checkUserExists(&db, registerParams.Username)
+	if err != nil {
+		responseProcessor.SendError(err, httpResponseWriter)
+		return
+	}
+	if userExists {
+		responseProcessor.SendError(apperrors.GetError(apperrors.AppUserNameExistsAlready),
+			httpResponseWriter)
+		return
+	}
 	// perform insert
 	fields := []appdb.Field{
 		{Name: "username", Value: registerParams.Username},
@@ -103,4 +115,18 @@ func RegisterUser(httpResponseWriter http.ResponseWriter,
 		return
 	}
 	responseProcessor.SendAck(httpResponseWriter)
+}
+
+func checkUserExists(db *appdb.DataBase, username string) (bool, error) {
+	// query for username existence
+	db.InitSql("SELECT id from users where username = @username")
+	_ = db.BindParam("@username", username)
+	userResults, err := db.Select()
+	if err != nil {
+		return false, err
+	}
+	if userResults.Next() {
+		return true, nil
+	}
+	return false, nil
 }
