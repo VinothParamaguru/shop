@@ -4,7 +4,7 @@ steps:
     args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test', '.' ]
   - name: 'gcr.io/cloud-builders/docker'
         args: [ 'push', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test' ]
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: 'gcr.io/google.com/gcloud'
       entrypoint: gcloud
       args:
         - 'run'
