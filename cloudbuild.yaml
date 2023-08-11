@@ -14,5 +14,5 @@ steps:
         - 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test'
         - '--region'
         - 'europe-west1'
-images:
-  - 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test'
+  images:
+    - 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test'
