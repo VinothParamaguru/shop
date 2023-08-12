@@ -1,10 +1,9 @@
-# used by cloud build
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test', '.' ]
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test' ]
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['run', 'deploy', 'shop', '--image', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test', '--region', 'europe-west1']
-  images:
-    - 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test'
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test', '.' ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test' ]
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['run', 'deploy', 'shop', '--image', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test', '--region', 'europe-west1']
+images:
+- 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test'
