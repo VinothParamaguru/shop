@@ -9,4 +9,4 @@ steps:
 images:
 - 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test'
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: NONE
