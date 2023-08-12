@@ -1,3 +1,4 @@
+# steps are picked up by the cloud build trigger set on GitHub repo push
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/shop-dev-394409/shop-registry/shop:test', '.' ]
